@@ -35,3 +35,31 @@ func TestZKPOverMultipleCurves(t *testing.T) {
 		require.NoError(t, err, fmt.Sprintf("failed in curve %d", i))
 	}
 }
+
+func TestProofVerificationWithAlteredProof(t *testing.T) {
+    // Setup the cryptographic parameters.
+    curve := curves.K256() // Assuming K256 is one of the supported curves.
+    basePoint := curve.NewGeneratorPoint()
+    sessionID := []byte("test session ID")
+
+    // Initialize a Prover.
+    prover := NewProver(curve, basePoint, sessionID)
+    
+    // Generate a random secret scalar.
+    secret := curve.Scalar.Random(rand.Reader)
+    
+    // Generate a valid proof using the secret.
+    proof, err := prover.Prove(secret)
+    require.NoError(t, err, "Proof generation should not encounter an error")
+
+    // Tamper with the proof: Modify the C component.
+    alteredC := curve.Scalar.Random(rand.Reader) // Ensure it's likely different.
+    proof.C = alteredC
+
+    // Attempt to verify the tampered proof.
+    err = Verify(proof, curve, basePoint, sessionID)
+    
+    // Verification should fail.
+    require.Error(t, err, "Verification should fail for an altered proof")
+}
+
