@@ -63,3 +63,26 @@ func TestProofVerificationWithAlteredProof(t *testing.T) {
     require.Error(t, err, "Verification should fail for an altered proof")
 }
 
+func TestProofCommitmentAndDecommitment(t *testing.T) {
+    // Setup the cryptographic parameters.
+    curve := curves.K256() // Assuming K256 is one of the supported curves.
+    basePoint := curve.NewGeneratorPoint()
+    sessionID := []byte("test session ID")
+
+    // Initialize a Prover.
+    prover := NewProver(curve, basePoint, sessionID)
+    
+    // Generate a random secret scalar.
+    secret := curve.Scalar.Random(rand.Reader)
+    
+    // Generate a proof and a commitment.
+    proof, commitment, err := prover.ProveCommit(secret)
+    require.NoError(t, err, "Proof and commitment generation should not encounter an error")
+
+    // Decommit the proof and verify it.
+    err = DecommitVerify(proof, commitment, curve, basePoint, sessionID)
+    
+    // Verification should succeed.
+    require.NoError(t, err, "Decommitment and verification should succeed without error")
+}
+
