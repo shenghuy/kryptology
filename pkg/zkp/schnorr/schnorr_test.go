@@ -86,3 +86,31 @@ func TestProofCommitmentAndDecommitment(t *testing.T) {
     require.NoError(t, err, "Decommitment and verification should succeed without error")
 }
 
+func TestCommitmentMismatch(t *testing.T) {
+    // Setup cryptographic parameters.
+    curve := curves.K256() // Assuming K256 is one of the supported curves.
+    basePoint := curve.NewGeneratorPoint()
+    sessionID := []byte("test session ID")
+
+    // Initialize a Prover.
+    prover := NewProver(curve, basePoint, sessionID)
+    
+    // Generate a random secret scalar.
+    secret := curve.Scalar.Random(rand.Reader)
+    
+    // Generate a proof and a commitment.
+    proof, originalCommitment, err := prover.ProveCommit(secret)
+    require.NoError(t, err, "Proof and commitment generation should not encounter an error")
+
+    // Introduce a mismatch in the commitment.
+    tamperedCommitment := make([]byte, len(originalCommitment))
+    copy(tamperedCommitment, originalCommitment)
+    tamperedCommitment[0] ^= 0xff // Flip the first byte to ensure it is different.
+
+    // Attempt to decommit and verify the proof with the tampered commitment.
+    err = DecommitVerify(proof, tamperedCommitment, curve, basePoint, sessionID)
+    
+    // Verification should fail.
+    require.Error(t, err, "Verification should fail due to commitment mismatch")
+}
+
